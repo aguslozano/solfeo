@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solfeo</title>
+<meta name="description" content="App de solfeo interactiva — notas, ritmo, entonación y dictado">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Solfeo">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgcng9IjI0IiBmaWxsPSIjMWExYTFhIi8+PHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCdhJ48L3RleHQ+PC9zdmc+">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #1c1c1c;
+    --bg3: #262626;
+    --text: #f0f0f0;
+    --text2: #aaa;
+    --text3: #666;
+    --border: rgba(255,255,255,0.12);
+    --border2: rgba(255,255,255,0.22);
+    --accent: #c8a96e;
+    --accent2: #e8c97e;
+    --ok: #4caf50;
+    --fail: #e05555;
+    --ok-bg: #1a2e1a;
+    --fail-bg: #2e1a1a;
+    --blue: #4a9edd;
+    --blue-bg: #162030;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  /* HEADER */
+  .header { background: var(--bg2); border-bottom: 0.5px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; }
+  .header-icon { font-size: 24px; line-height: 1; }
+  .header-title { font-size: 18px; font-weight: 600; color: var(--accent); }
+  .header-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+  /* TABS */
+  .tabs { display: flex; overflow-x: auto; background: var(--bg2); border-bottom: 0.5px solid var(--border); padding: 0 12px; gap: 4px; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--text3); border: none; background: none; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* CONTENT */
+  .content { padding: 20px 16px; max-width: 600px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* SCORE */
+  .score-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .score-label { font-size: 13px; color: var(--text3); }
+  .score-val { font-size: 18px; font-weight: 600; color: var(--accent); }
+
+  /* BUTTONS */
+  .btn { padding: 10px 20px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; background: var(--bg3); color: var(--text); transition: all 0.15s; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #000; border-color: transparent; font-weight: 600; }
+  .btn-primary:hover { background: var(--accent2); color: #000; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+  /* CHOICE BUTTONS */
+  .choices { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .choice-btn { padding: 12px 22px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); font-size: 16px; font-weight: 600; cursor: pointer; background: var(--bg3); color: var(--text); transition: all 0.15s; }
+  .choice-btn:hover { border-color: var(--accent); }
+  .choice-btn.correct { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+  .choice-btn.wrong { background: var(--fail-bg); border-color: var(--fail); color: var(--fail); }
+
+  /* FEEDBACK */
+  .feedback { margin-top: 12px; font-size: 14px; font-weight: 500; min-height: 20px; }
+  .feedback.ok { color: var(--ok); }
+  .feedback.fail { color: var(--fail); }
+
+  /* NEXT BTN */
+  .next-btn { margin-top: 14px; display: none; }
+  .next-btn.show { display: inline-block; }
+
+  /* STAFF SVG */
+  .staff-wrap { background: var(--bg3); border-radius: var(--radius-sm); padding: 8px; margin-bottom: 4px; }
+
+  /* RHYTHM */
+  .beat-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+  .beat { width: 46px; height: 46px; border-radius: var(--radius-sm); border: 0.5px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; cursor: pointer; background: var(--bg3); color: var(--text2); transition: all 0.1s; user-select: none; }
+  .beat:active { transform: scale(0.9); }
+  .beat.hit { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+  .tempo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .tempo-row label { font-size: 13px; color: var(--text3); white-space: nowrap; }
+  .tempo-val { font-size: 13px; font-weight: 600; color: var(--accent); min-width: 64px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+
+  /* ENTONACIÓN */
+  .big-note-wrap { text-align: center; padding: 28px 16px; background: var(--bg3); border-radius: var(--radius-sm); margin-bottom: 14px; }
+  .big-note { font-size: 64px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .note-hint { font-size: 13px; color: var(--text3); margin-top: 6px; }
+  .interval-desc { font-size: 14px; color: var(--text2); line-height: 1.7; padding: 14px; background: var(--bg3); border-radius: var(--radius-sm); border-left: 3px solid var(--accent); }
+  .interval-desc strong { color: var(--text); font-weight: 600; display: block; margin-bottom: 4px; }
+
+  /* DICTADO */
+  .level-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .level-btn { padding: 7px 16px; border: 0.5px solid var(--border); border-radius: 20px; font-size: 13px; cursor: pointer; background: transparent; color: var(--text3); transition: all 0.15s; }
+  .level-btn.active { background: var(--accent); color: #000; border-color: transparent; font-weight: 600; }
+
+  .melody-slots { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; min-height: 52px; align-items: center; }
+  .note-slot { width: 52px; height: 52px; border-radius: var(--radius-sm); border: 1.5px dashed var(--border2); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: var(--text); transition: all 0.2s; }
+  .note-slot.active-slot { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(200,169,110,0.2); }
+  .note-slot.filled { border-style: solid; border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+  .note-slot.correct-slot { border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
+  .note-slot.wrong-slot { border-color: var(--fail); color: var(--fail); background: var(--fail-bg); }
+
+  .kbd { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+  .kbd-btn { padding: 12px 16px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; background: var(--bg3); color: var(--text); transition: all 0.12s; min-width: 52px; text-align: center; }
+  .kbd-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .kbd-btn:active { transform: scale(0.93); }
+  .del-btn { color: var(--text3); }
+
+  .progress-dots { display: flex; gap: 7px; margin-bottom: 14px; align-items: center; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border2); transition: all 0.2s; }
+  .dot.done-ok { background: var(--ok); }
+  .dot.done-fail { background: var(--fail); }
+  .dot.current { background: var(--accent); box-shadow: 0 0 0 2px rgba(200,169,110,0.3); }
+
+  .hint-box { font-size: 13px; color: var(--text3); padding: 12px 14px; background: var(--bg3); border-radius: var(--radius-sm); line-height: 1.6; }
+  .hint-box strong { color: var(--text2); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">𝄞</div>
+  <div>
+    <div class="header-title">Solfeo</div>
+    <div class="header-sub">Entrenamiento musical</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('notas')">📋 Notas</button>
+  <button class="tab" onclick="switchTab('ritmo')">🥁 Ritmo</button>
+  <button class="tab" onclick="switchTab('entonacion')">🎵 Entonación</button>
+  <button class="tab" onclick="switchTab('dictado')">👂 Dictado</button>
+</div>
+
+<div class="content">
+
+  <!-- NOTAS -->
+  <div class="section active" id="sec-notas">
+    <div class="score-bar">
+      <span class="score-label">Aciertos:</span>
+      <span class="score-val" id="nota-score">0 / 0</span>
+    </div>
+    <div class="card">
+      <div class="card-title">¿Qué nota es esta?</div>
+      <div class="staff-wrap">
+        <svg id="staff-svg" width="100%" height="160" viewBox="0 0 400 160"></svg>
+      </div>
+      <div class="choices" id="nota-choices"></div>
+      <div class="feedback" id="nota-feedback"></div>
+      <button class="btn next-btn" id="nota-next" onclick="nextNota()">Siguiente →</button>
+    </div>
+    <div class="hint-box">
+      <strong>Clave de Sol</strong><br>
+      Líneas (abajo→arriba): Mi · Sol · Si · Re · Fa<br>
+      Espacios: Fa · La · Do · Mi
+    </div>
+  </div>
+
+  <!-- RITMO -->
+  <div class="section" id="sec-ritmo">
+    <div class="card">
+      <div class="card-title">Ejercicio de ritmo</div>
+      <div class="tempo-row">
+        <label>Tempo</label>
+        <input type="range" min="60" max="160" value="80" id="tempo-slider" oninput="document.getElementById('tempo-disp').textContent=this.value+' BPM'">
+        <span class="tempo-val" id="tempo-disp">80 BPM</span>
+      </div>
+      <div id="rhythm-patterns"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="playRhythm()">▶ Reproducir</button>
+        <button class="btn" onclick="nextRhythm()">Nuevo patrón</button>
+      </div>
+      <div class="feedback" id="rhythm-fb" style="margin-top:10px;"></div>
+    </div>
+    <div class="hint-box">
+      <strong>Figuras rítmicas</strong><br>
+      Redonda: 4 tiempos · Blanca: 2 tiempos · Negra: 1 tiempo · Corchea: ½ tiempo
+    </div>
+  </div>
+
+  <!-- ENTONACIÓN -->
+  <div class="section" id="sec-entonacion">
+    <div class="big-note-wrap">
+      <div class="big-note" id="ent-note">Do</div>
+      <div class="note-hint" id="ent-hint">Nota base de la escala</div>
+    </div>
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="playNote()">▶ Escuchar nota</button>
+      <button class="btn" onclick="playScale()">▶ Escuchar escala</button>
+      <button class="btn" onclick="nextInterval()">Siguiente →</button>
+    </div>
+    <div class="interval-desc" id="interval-info"></div>
+  </div>
+
+  <!-- DICTADO -->
+  <div class="section" id="sec-dictado">
+    <div class="score-bar">
+      <span class="score-label">Aciertos:</span>
+      <span class="score-val" id="dict-score">0 / 0</span>
+    </div>
+    <div class="card">
+      <div class="card-title">Nivel</div>
+      <div class="level-row">
+        <button class="level-btn active" onclick="setLevel(0,this)">2 notas</button>
+        <button class="level-btn" onclick="setLevel(1,this)">3 notas</button>
+        <button class="level-btn" onclick="setLevel(2,this)">4 notas</button>
+        <button class="level-btn" onclick="setLevel(3,this)">5 notas</button>
+      </div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:8px;">Escuchá la melodía e identificá las notas en orden</div>
+      <div class="progress-dots" id="dict-dots"></div>
+      <div class="melody-slots" id="melody-slots"></div>
+      <div class="kbd" id="note-kbd"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="playMelody()">▶ Escuchar</button>
+        <button class="btn" id="check-btn" onclick="checkDictado()" style="display:none;">Verificar</button>
+        <button class="btn" onclick="newDictado()">Nueva melodía</button>
+        <button class="btn del-btn" onclick="deleteLast()">← Borrar</button>
+      </div>
+      <div class="feedback" id="dict-feedback"></div>
+      <div style="font-size:13px;color:var(--text3);margin-top:8px;min-height:16px;" id="dict-hint"></div>
+    </div>
+    <div class="hint-box">
+      <strong>Consejo</strong><br>
+      Escuchá la melodía completa primero. Tararéala. Luego identificá cada nota una por una. No hay límite de reproducciones.
+    </div>
+  </div>
+
+</div>
+
+<script>
+const NOTES_DATA = [
+  { name:'Do',  y:128, ledger:true,  pos:'espacio debajo',  freq:261.63 },
+  { name:'Re',  y:120, ledger:false, pos:'debajo línea 1',  freq:293.66 },
+  { name:'Mi',  y:112, ledger:false, pos:'línea 1',         freq:329.63 },
+  { name:'Fa',  y:104, ledger:false, pos:'espacio 1',       freq:349.23 },
+  { name:'Sol', y:96,  ledger:false, pos:'línea 2',         freq:392.00 },
+  { name:'La',  y:88,  ledger:false, pos:'espacio 2',       freq:440.00 },
+  { name:'Si',  y:80,  ledger:false, pos:'línea 3',         freq:493.88 },
+  { name:'Do2', display:'Do', y:72, ledger:false, pos:'espacio 3', freq:523.25 },
+  { name:'Re2', display:'Re', y:64, ledger:false, pos:'línea 4',   freq:587.33 },
+  { name:'Mi2', display:'Mi', y:56, ledger:false, pos:'espacio 4', freq:659.25 },
+  { name:'Fa2', display:'Fa', y:48, ledger:false, pos:'línea 5',   freq:698.46 },
+];
+const INTERVALS = [
+  { note:'Do',  hint:'Nota base',      desc:'La nota Do es el centro tonal. Cantá con vocal abierta. Es el punto de reposo más importante.',              freq:261.63 },
+  { note:'Re',  hint:'Segunda mayor',  desc:'Re es un tono arriba del Do. Imaginá "Feliz Cumpleaños" — la segunda nota es Re. Subí un escalón.',          freq:293.66 },
+  { note:'Mi',  hint:'Tercera mayor',  desc:'Mi es alegre y estable. Abrí el pecho y cantá con confianza.',                                               freq:329.63 },
+  { note:'Fa',  hint:'Cuarta justa',   desc:'Fa tiene un salto interesante. Pensá en "¡Aquí llega Santa Claus!". Sentís que sube.',                       freq:349.23 },
+  { note:'Sol', hint:'Quinta justa',   desc:'Sol es la nota más consonante después del Do. Fuerte y claro.',                                              freq:392.00 },
+  { note:'La',  hint:'Sexta mayor',    desc:'La tiene un color nostálgico. Sentís que flota un poco.',                                                    freq:440.00 },
+  { note:'Si',  hint:'Séptima mayor',  desc:'Si es la nota más tensa de la escala, quiere resolver al Do.',                                               freq:493.88 },
+];
+const RHYTHMS = [
+  { name:'4/4 básico',  beats:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], labels:['1','e','+','a','2','e','+','a','3','e','+','a','4','e','+','a'], strong:[0,4,8,12] },
+  { name:'Negras',      beats:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], labels:['1','','','','2','','','','3','','','','4','','',''],             strong:[0,4,8,12], show:[0,4,8,12] },
+  { name:'Corcheas',    beats:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0], labels:['1','+','2','+','3','+','4','+','1','+','2','+','3','+','4','+'],strong:[0,2,4,6,8,10,12,14], show:[0,2,4,6,8,10,12,14] },
+  { name:'Síncopa',     beats:[1,0,0,1,0,1,0,0,1,0,0,1,0,0,1,0], labels:['1','e','+','a','2','e','+','a','3','e','+','a','4','e','+','a'], strong:[0,3,5,8,11,14] },
+];
+const DICT_LEVELS = [2,3,4,5];
+const DICT_NOTES  = ['Do','Re','Mi','Fa','Sol','La','Si'];
+const DICT_FREQS  = {Do:261.63,Re:293.66,Mi:329.63,Fa:349.23,Sol:392.00,La:440.00,Si:493.88};
+const ROUND_SIZE  = 5;
+
+let audioCtx = null;
+let currentNota=null, notaCorrect=0, notaTotal=0, notaAnswered=false;
+let currentRhythm=0;
+let currentInterval=0;
+let dictLevel=0, dictMelody=[], userAnswer=[], dictCorrect=0, dictTotal=0, dictAnswered=false, roundResults=[];
+
+function getAudio(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep(freq,dur,vol,delay){
+  const ctx=getAudio();
+  const o=ctx.createOscillator(), g=ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.frequency.value=freq; o.type='sine';
+  const t=ctx.currentTime+(delay||0);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol||0.3,t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.start(t); o.stop(t+dur+0.05);
+}
+
+function switchTab(tab){
+  const ids=['notas','ritmo','entonacion','dictado'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===tab));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+}
+
+/* --- NOTAS --- */
+function drawStaff(noteY,isLedger){
+  const svg=document.getElementById('staff-svg'); svg.innerHTML='';
+  [48,64,80,96,112].forEach(y=>{
+    const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1','30'); l.setAttribute('x2','370');
+    l.setAttribute('y1',y); l.setAttribute('y2',y);
+    l.setAttribute('stroke','#444'); l.setAttribute('stroke-width','1');
+    svg.appendChild(l);
+  });
+  const clef=document.createElementNS('http://www.w3.org/2000/svg','text');
+  clef.setAttribute('x','18'); clef.setAttribute('y','100');
+  clef.setAttribute('font-size','72'); clef.setAttribute('fill','#c8a96e');
+  clef.textContent='𝄞'; svg.appendChild(clef);
+  if(isLedger){
+    const ll=document.createElementNS('http://www.w3.org/2000/svg','line');
+    ll.setAttribute('x1','175'); ll.setAttribute('x2','225');
+    ll.setAttribute('y1',noteY); ll.setAttribute('y2',noteY);
+    ll.setAttribute('stroke','#555'); ll.setAttribute('stroke-width','1.5');
+    svg.appendChild(ll);
+  }
+  const c=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+  c.setAttribute('cx','200'); c.setAttribute('cy',noteY);
+  c.setAttribute('rx','14'); c.setAttribute('ry','10');
+  c.setAttribute('fill','#f0f0f0'); svg.appendChild(c);
+  const sx=noteY<88?'213':'187', sy=noteY<88?noteY+40:noteY-40;
+  const stem=document.createElementNS('http://www.w3.org/2000/svg','line');
+  stem.setAttribute('x1',sx); stem.setAttribute('x2',sx);
+  stem.setAttribute('y1',noteY); stem.setAttribute('y2',sy);
+  stem.setAttribute('stroke','#f0f0f0'); stem.setAttribute('stroke-width','1.5');
+  svg.appendChild(stem);
+}
+function loadNota(){
+  notaAnswered=false;
+  const pool=NOTES_DATA.filter(n=>n!==currentNota);
+  currentNota=pool[Math.floor(Math.random()*pool.length)];
+  drawStaff(currentNota.y,currentNota.ledger);
+  const correctName=currentNota.display||currentNota.name;
+  const wrong=NOTES_DATA.map(n=>n.display||n.name).filter(n=>n!==correctName).sort(()=>Math.random()-0.5).slice(0,3);
+  const choices=[...wrong,correctName].sort(()=>Math.random()-0.5);
+  const cont=document.getElementById('nota-choices'); cont.innerHTML='';
+  choices.forEach(c=>{
+    const b=document.createElement('button'); b.className='choice-btn'; b.textContent=c;
+    b.onclick=()=>checkNota(c,b); cont.appendChild(b);
+  });
+  document.getElementById('nota-feedback').textContent='';
+  document.getElementById('nota-feedback').className='feedback';
+  document.getElementById('nota-next').classList.remove('show');
+}
+function checkNota(answer,btn){
+  if(notaAnswered) return;
+  notaAnswered=true; notaTotal++;
+  const correct=currentNota.display||currentNota.name;
+  if(answer===correct){
+    notaCorrect++; btn.classList.add('correct');
+    document.getElementById('nota-feedback').textContent='¡Correcto! Es '+correct;
+    document.getElementById('nota-feedback').className='feedback ok';
+    beep(440,0.15,0.2);
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.choice-btn').forEach(b=>{if(b.textContent===correct)b.classList.add('correct');});
+    document.getElementById('nota-feedback').textContent='Era '+correct+' ('+currentNota.pos+')';
+    document.getElementById('nota-feedback').className='feedback fail';
+    beep(200,0.3,0.15);
+  }
+  document.getElementById('nota-score').textContent=notaCorrect+' / '+notaTotal;
+  document.getElementById('nota-next').classList.add('show');
+}
+function nextNota(){ loadNota(); }
+
+/* --- RITMO --- */
+function loadRhythm(){
+  const r=RHYTHMS[currentRhythm];
+  const show=r.show||r.beats.map((_,i)=>i);
+  const cont=document.getElementById('rhythm-patterns');
+  cont.innerHTML='<div style="font-weight:600;color:#aaa;margin-bottom:10px;font-size:14px;">'+r.name+'</div>';
+  const row=document.createElement('div'); row.className='beat-row';
+  show.forEach(i=>{
+    const b=document.createElement('div'); b.className='beat'; b.id='beat-'+i; b.textContent=r.labels[i]||'·';
+    b.onclick=()=>b.classList.add('hit'); row.appendChild(b);
+  });
+  cont.appendChild(row);
+  document.getElementById('rhythm-fb').textContent='';
+}
+function playRhythm(){
+  const r=RHYTHMS[currentRhythm];
+  const bpm=parseInt(document.getElementById('tempo-slider').value);
+  const interval=60000/bpm/4;
+  let i=0;
+  document.getElementById('rhythm-fb').textContent='Reproduciendo...';
+  const p=setInterval(()=>{
+    if(i>=r.beats.length){clearInterval(p);document.getElementById('rhythm-fb').textContent='Ahora marcá los tiempos.';return;}
+    if(r.beats[i]) beep(r.strong&&r.strong.includes(i)?440:330,0.12,0.25);
+    i++;
+  },interval);
+}
+function nextRhythm(){ currentRhythm=(currentRhythm+1)%RHYTHMS.length; loadRhythm(); }
+
+/* --- ENTONACIÓN --- */
+function loadInterval(){
+  const iv=INTERVALS[currentInterval];
+  document.getElementById('ent-note').textContent=iv.note;
+  document.getElementById('ent-hint').textContent=iv.hint;
+  document.getElementById('interval-info').innerHTML='<strong>'+iv.note+' — '+iv.hint+'</strong>'+iv.desc;
+}
+function playNote(){
+  beep(261.63,0.3,0.25);
+  setTimeout(()=>beep(INTERVALS[currentInterval].freq,0.6,0.3),400);
+}
+function playScale(){ INTERVALS.forEach((iv,i)=>setTimeout(()=>beep(iv.freq,0.3,0.25),i*350)); }
+function nextInterval(){ currentInterval=(currentInterval+1)%INTERVALS.length; loadInterval(); }
+
+/* --- DICTADO --- */
+function setLevel(idx,btn){
+  dictLevel=idx;
+  document.querySelectorAll('.level-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  newDictado();
+}
+function genMelody(){
+  const len=DICT_LEVELS[dictLevel], m=[];
+  for(let i=0;i<len;i++) m.push(DICT_NOTES[Math.floor(Math.random()*DICT_NOTES.length)]);
+  return m;
+}
+function renderDots(){
+  const cont=document.getElementById('dict-dots'); cont.innerHTML='';
+  for(let i=0;i<ROUND_SIZE;i++){
+    const d=document.createElement('div'); d.className='dot';
+    if(i<roundResults.length) d.classList.add(roundResults[i]?'done-ok':'done-fail');
+    else if(i===roundResults.length) d.classList.add('current');
+    cont.appendChild(d);
+  }
+}
+function renderSlots(){
+  const cont=document.getElementById('melody-slots'); cont.innerHTML='';
+  dictMelody.forEach((_,i)=>{
+    const s=document.createElement('div');
+    s.className='note-slot'+(i===userAnswer.length&&!dictAnswered?' active-slot':'');
+    s.id='slot-'+i;
+    if(userAnswer[i]){s.textContent=userAnswer[i];s.classList.add('filled');}
+    cont.appendChild(s);
+  });
+}
+function renderKbd(){
+  const cont=document.getElementById('note-kbd'); cont.innerHTML='';
+  DICT_NOTES.forEach(n=>{
+    const b=document.createElement('button'); b.className='kbd-btn'; b.textContent=n;
+    b.onclick=()=>addNote(n); cont.appendChild(b);
+  });
+}
+function addNote(note){
+  if(dictAnswered||userAnswer.length>=dictMelody.length) return;
+  beep(DICT_FREQS[note],0.25,0.25);
+  userAnswer.push(note); renderSlots();
+  if(userAnswer.length===dictMelody.length) document.getElementById('check-btn').style.display='inline-block';
+}
+function deleteLast(){
+  if(dictAnswered||userAnswer.length===0) return;
+  userAnswer.pop(); document.getElementById('check-btn').style.display='none'; renderSlots();
+}
+function playMelody(){ dictMelody.forEach((n,i)=>setTimeout(()=>beep(DICT_FREQS[n],0.35,0.3),i*500)); }
+function checkDictado(){
+  if(dictAnswered) return;
+  dictAnswered=true; dictTotal++;
+  let ok=true;
+  dictMelody.forEach((note,i)=>{
+    const s=document.getElementById('slot-'+i);
+    s.classList.remove('filled');
+    if(userAnswer[i]===note) s.classList.add('correct-slot');
+    else { ok=false; s.classList.add('wrong-slot'); s.textContent=note; }
+  });
+  if(ok){
+    dictCorrect++;
+    document.getElementById('dict-feedback').textContent='¡Perfecto! Melodía correcta.';
+    document.getElementById('dict-feedback').className='feedback ok';
+    beep(440,0.1,0.2); setTimeout(()=>beep(523,0.1,0.2),120); setTimeout(()=>beep(659,0.3,0.2),240);
+    roundResults.push(true);
+  } else {
+    document.getElementById('dict-feedback').textContent='Casi. La melodía correcta aparece en verde.';
+    document.getElementById('dict-feedback').className='feedback fail';
+    beep(200,0.3,0.12); roundResults.push(false);
+    setTimeout(()=>playMelody(),700);
+  }
+  document.getElementById('dict-score').textContent=dictCorrect+' / '+dictTotal;
+  document.getElementById('dict-hint').textContent='Escuchá de nuevo para comparar.';
+  renderDots();
+  if(roundResults.length>=ROUND_SIZE){
+    setTimeout(()=>{
+      const pct=Math.round(roundResults.filter(Boolean).length/ROUND_SIZE*100);
+      document.getElementById('dict-hint').textContent='Ronda terminada: '+pct+'% de aciertos. ¡Nueva ronda!';
+      roundResults=[]; renderDots();
+    },1500);
+  }
+}
+function newDictado(){
+  dictMelody=genMelody(); userAnswer=[]; dictAnswered=false;
+  document.getElementById('dict-feedback').textContent='';
+  document.getElementById('dict-feedback').className='feedback';
+  document.getElementById('dict-hint').textContent='';
+  document.getElementById('check-btn').style.display='none';
+  renderSlots(); renderKbd(); renderDots();
+  setTimeout(()=>playMelody(),400);
+}
+
+loadNota(); loadRhythm(); loadInterval(); roundResults=[]; newDictado();
+</script>
+</body>
+</html>
